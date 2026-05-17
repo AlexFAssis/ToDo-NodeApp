@@ -1,7 +1,7 @@
 const listElement = document.getElementById("task-list");
 const countElement = document.getElementById("task-count");
 const addButton = document.getElementById("add-task");
-const clearCompletedButton = document.getElementById("clear-completed");
+const hideCompletedButton = document.getElementById("hide-completed");
 const calendarDate = document.getElementById("calendar-date");
 const viewType = document.getElementById("view-type");
 const modal = document.getElementById("task-modal");
@@ -38,25 +38,37 @@ function formatarData(dateString) {
 function AtualizarViewType() {
   viewType.textContent = selectedDate
     ? `Tarefas da data: ${formatarData(selectedDate)}`
-    : "Todas as datas";
+    : "Todas as Tarefas";
 }
 
-function renderizarTarefas() {
-  const filtered = selectedDate
-    ? tasks.filter((task) => task.dueDate.startsWith(selectedDate))
-    : tasks;
+function renderizarTarefas(OcultarTarefasConcluidas = false) {
+  const filtered = tasks.filter((task) => {
+    const matchesDate = selectedDate
+      ? task.dueDate.startsWith(selectedDate)
+      : true;
+    const matchesCompletion = OcultarTarefasConcluidas ? !task.completed : true;
+    return matchesDate && matchesCompletion;
+  });
 
   listElement.innerHTML = "";
 
   if (filtered.length === 0) {
     listElement.innerHTML = `<li class="task-card"><p>Nenhuma tarefa encontrada para esta data.</p></li>`;
-    AtualizarSumario();
+    AtualizarSumario(OcultarTarefasConcluidas);
     return;
   }
 
   filtered.forEach((task) => {
     const card = document.createElement("li");
+
     card.className = `task-card${task.completed ? " completed" : ""}`;
+
+    if (
+      !task.completed &&
+      task.dueDate < new Date().toISOString().slice(0, 10)
+    ) {
+      card.classList.add("task-meta-pending");
+    }
 
     card.innerHTML = `
       <div class="task-card-header">
@@ -76,28 +88,34 @@ function renderizarTarefas() {
     listElement.appendChild(card);
   });
 
-  AtualizarSumario();
+  AtualizarSumario(OcultarTarefasConcluidas);
 }
 
-function AtualizarSumario() {
-  const pending = tasks.filter((task) => !task.completed).length;
-  const total = tasks.length;
+function AtualizarSumario(OcultarTarefasConcluidas = false) {
+  const pending = tasks.filter(
+    (task) =>
+      !task.completed &&
+      (task.dueDate.startsWith(selectedDate) || !selectedDate),
+  ).length;
+  const total = !OcultarTarefasConcluidas ? tasks.length : pending;
+
   countElement.textContent = `${pending} de ${total} tarefas pendentes`;
 }
 
-async function CarregarTarefas() {
+async function CarregarTarefas(OcultarTarefasConcluidas = false) {
   const response = await fetch("/api/tasks");
   const payload = await response.json();
 
   if (!Array.isArray(payload)) {
     console.error("Erro ao carregar tarefas:", payload);
     tasks = [];
-    renderizarTarefas();
+    renderizarTarefas(OcultarTarefasConcluidas);
     return;
   }
 
   tasks = payload;
-  renderizarTarefas();
+
+  renderizarTarefas(OcultarTarefasConcluidas);
 }
 
 function abrirModal(editTask = null) {
@@ -155,7 +173,7 @@ async function salvarTarefa(event) {
   }
 
   fecharModal();
-  await CarregarTarefas();
+  await CarregarTarefas(false);
 }
 
 async function manipularAcoes(event) {
@@ -185,23 +203,25 @@ async function manipularAcoes(event) {
     await fetch(`/api/tasks/${id}`, { method: "DELETE" });
   }
 
-  await CarregarTarefas();
+  await CarregarTarefas(false);
 }
 
-async function LimparTarefasCompletadas() {
-  const completedTasks = tasks.filter((task) => task.completed);
-  await Promise.all(
-    completedTasks.map((task) =>
-      fetch(`/api/tasks/${task.id}`, { method: "DELETE" }),
-    ),
-  );
-  await CarregarTarefas();
+async function OcultarTarefasCompletadas() {
+  if (hideCompletedButton.textContent.trim() === "Ocultar concluídas") {
+    hideCompletedButton.textContent = "Mostrar concluídas";
+
+    await CarregarTarefas(true);
+  } else {
+    hideCompletedButton.textContent = "Ocultar concluídas";
+
+    await CarregarTarefas(false);
+  }
 }
 
 calendarDate.addEventListener("change", () => {
   selectedDate = calendarDate.value || null;
   AtualizarViewType();
-  renderizarTarefas();
+  renderizarTarefas(false);
 });
 
 addButton.addEventListener("click", () => abrirModal());
@@ -215,7 +235,7 @@ modal.addEventListener("click", (event) => {
 
 taskForm.addEventListener("submit", salvarTarefa);
 listElement.addEventListener("click", manipularAcoes);
-clearCompletedButton.addEventListener("click", LimparTarefasCompletadas);
+hideCompletedButton.addEventListener("click", OcultarTarefasCompletadas);
 
-CarregarTarefas();
+CarregarTarefas(false);
 AtualizarViewType();
