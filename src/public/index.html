@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Agenda de Tarefas</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main class="app-shell">
+      <header class="app-header">
+        <div>
+          <h1>Agenda de Tarefas</h1>
+          <p>Use o calendário para ver suas tarefas e marque as concluídas.</p>
+        </div>
+        <button id="add-task" class="primary-button">+ Nova tarefa</button>
+      </header>
+
+      <section class="calendar-bar">
+        <label for="calendar-date">Data selecionada</label>
+        <input id="calendar-date" type="date" />
+        <span id="view-type">Todas as datas</span>
+      </section>
+
+      <section class="task-summary">
+        <span id="task-count">Não há tarefas para listagem</span>
+        <button id="clear-completed" class="secondary-button">
+          Limpar concluídas
+        </button>
+      </section>
+
+      <ul id="task-list" class="task-list"></ul>
+    </main>
+
+    <div id="task-modal" class="modal hidden">
+      <div class="modal-content">
+        <button id="close-modal" class="close-button">×</button>
+        <h2 id="modal-title">Nova tarefa</h2>
+        <form id="task-form">
+          <label>
+            Título
+            <input
+              id="task-title"
+              type="text"
+              required
+              placeholder="Digite o título da tarefa"
+            />
+          </label>
+          <label>
+            Descrição
+            <textarea
+              id="task-description"
+              rows="3"
+              placeholder="Descreva a tarefa..."
+            ></textarea>
+          </label>
+          <label>
+            Data de conclusão
+            <input id="task-due-date" type="date" required />
+          </label>
+          <div class="form-actions">
+            <button type="button" id="cancel-button" class="secondary-button">
+              Cancelar
+            </button>
+            <button type="submit" class="primary-button">Salvar</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <script src="app.js"></script>
+  </body>
+</html>
