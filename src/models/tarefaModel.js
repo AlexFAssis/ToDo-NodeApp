@@ -7,6 +7,7 @@ function normalizarTarefa(payload) {
     description:
       typeof payload.description === "string" ? payload.description.trim() : "",
     dueDate: typeof payload.dueDate === "string" ? payload.dueDate.trim() : "",
+    dueTime: typeof payload.dueTime === "string" ? payload.dueTime.trim() : "",
     completed: Boolean(payload.completed),
     createdAt: payload.createdAt || new Date().toISOString(),
   };
@@ -25,6 +26,17 @@ function validarTarefa(task, options = {}) {
 
   if (task.dueDate && Number.isNaN(Date.parse(task.dueDate))) {
     return "A data de conclusão deve ser válida.";
+  }
+
+  if (task.dueTime && !/^\d{2}:\d{2}$/.test(task.dueTime)) {
+    return "A hora deve estar no formato HH:MM.";
+  }
+
+  if (task.dueTime) {
+    const [hours, minutes] = task.dueTime.split(":").map(Number);
+    if (hours < 0 || hours > 23 || minutes < 0 || minutes > 59) {
+      return "A hora deve ser válida.";
+    }
   }
 
   return null;

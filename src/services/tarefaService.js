@@ -18,10 +18,17 @@ function verificarCriacaoBancodeDados() {
         title TEXT NOT NULL,
         description TEXT,
         dueDate TEXT NOT NULL,
+        dueTime TEXT,
         completed INTEGER NOT NULL DEFAULT 0,
         createdAt TEXT NOT NULL
       )`,
     );
+
+    db.all(`PRAGMA table_info(tasks)`, (err, rows) => {
+      if (!err && rows && !rows.some((column) => column.name === "dueTime")) {
+        db.run(`ALTER TABLE tasks ADD COLUMN dueTime TEXT`);
+      }
+    });
   });
   db.close();
 }
@@ -59,7 +66,7 @@ function allQuery(sql, params = []) {
 
 async function buscarTarefas() {
   const rows = await allQuery(
-    "SELECT * FROM tasks ORDER BY dueDate ASC, createdAt ASC",
+    "SELECT * FROM tasks ORDER BY dueDate ASC, dueTime ASC, createdAt ASC",
   );
   return rows.map((task) => ({
     ...task,
@@ -68,13 +75,14 @@ async function buscarTarefas() {
 }
 
 async function criarTarefa(taskData) {
-  const sql = `INSERT INTO tasks (id, title, description, dueDate, completed, createdAt)
-    VALUES (?, ?, ?, ?, ?, ?)`;
+  const sql = `INSERT INTO tasks (id, title, description, dueDate, dueTime, completed, createdAt)
+    VALUES (?, ?, ?, ?, ?, ?, ?)`;
   await executarQuery(sql, [
     taskData.id,
     taskData.title,
     taskData.description,
     taskData.dueDate,
+    taskData.dueTime,
     taskData.completed ? 1 : 0,
     taskData.createdAt,
   ]);
@@ -95,17 +103,20 @@ async function atualizarTarefa(id, taskData) {
         ? taskData.description
         : existing.description,
     dueDate: taskData.dueDate || existing.dueDate,
+    dueTime:
+      taskData.dueTime !== undefined ? taskData.dueTime : existing.dueTime,
     completed:
       taskData.completed !== undefined
         ? taskData.completed
         : existing.completed,
   };
 
-  const sql = `UPDATE tasks SET title = ?, description = ?, dueDate = ?, completed = ? WHERE id = ?`;
+  const sql = `UPDATE tasks SET title = ?, description = ?, dueDate = ?, dueTime = ?, completed = ? WHERE id = ?`;
   await executarQuery(sql, [
     updated.title,
     updated.description,
     updated.dueDate,
+    updated.dueTime,
     updated.completed ? 1 : 0,
     id,
   ]);
